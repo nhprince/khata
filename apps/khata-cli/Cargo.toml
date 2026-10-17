@@ -1,0 +1,23 @@
+[package]
+name = "khata-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Khata command line: convert, inspect, render, run commands, MCP server"
+
+[[bin]]
+name = "khata-cli"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+khata-doc = { workspace = true }
+khata-engine = { workspace = true }
+khata-render = { workspace = true }
+khata-mcp = { workspace = true }
+khata-zotero = { workspace = true }
+serde_json = { workspace = true }
+sys-locale = "0.3"

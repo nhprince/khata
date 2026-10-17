@@ -1,0 +1,22 @@
+[package]
+name = "khata-render"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Khata rasteriser: pages and thumbnails from the layout display list (vello_cpu), PNG/JPEG export"
+
+[lints]
+workspace = true
+
+[dependencies]
+khata-geom = { workspace = true }
+khata-doc = { workspace = true }
+khata-fonts = { workspace = true }
+khata-layout = { workspace = true }
+khata-metafile = { workspace = true }
+vello_cpu = { workspace = true }
+image = { workspace = true }
+log = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+vello_cpu = { workspace = true, features = ["multithreading"] }

@@ -1,0 +1,17 @@
+[package]
+name = "khata-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Khata MCP server: every command as a tool, headless or bridged to the running app"
+
+[lints]
+workspace = true
+
+[dependencies]
+khata-doc = { workspace = true }
+khata-engine = { workspace = true }
+khata-render = { workspace = true }
+khata-control-key = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
