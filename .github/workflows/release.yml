@@ -146,6 +146,11 @@ jobs:
           Copy-Item "$bin/khata.exe", "$bin/khata-cli.exe", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE" "dist/release/$name"
           Compress-Archive -Path "dist/release/$name" -DestinationPath "dist/release/$name.zip" -Force
           Remove-Item -Recurse -Force "dist/release/$name"
+      - name: List what was built
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem dist/release | ForEach-Object { "{0,12:N0} bytes  {1}" -f $_.Length, $_.Name }
+          @("### Windows packages", '```') + $files + @('```') | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
       - uses: actions/upload-artifact@v4
         with:
           name: dist-windows
@@ -178,15 +183,21 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Make the packaging scripts executable
+        run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Package (AppImage, deb, rpm, tar.gz)
         id: pkg
         continue-on-error: true
-        run: packaging/linux/package.sh
+        run: bash packaging/linux/package.sh
       - name: Fallback (deb and tar.gz only)
         if: steps.pkg.outcome == 'failure'
         run: |
           echo "::warning::The full Linux packaging failed; shipping deb and tar.gz only."
-          packaging/linux/package.sh --skip-build --formats "deb tar"
+          bash packaging/linux/package.sh --skip-build --formats "deb tar"
+      - name: List what was built
+        shell: bash
+        run: |
+          { echo "### Linux packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: dist-linux
@@ -210,8 +221,13 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Make the packaging scripts executable
+        run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Package (universal dmg and CLI zip)
-        run: packaging/macos/package.sh --arch universal
+        run: bash packaging/macos/package.sh --arch universal
+      - name: List what was built
+        run: |
+          { echo "### macOS packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: dist-macos
@@ -225,6 +241,8 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     continue-on-error: true
+    outputs:
+      ok: ${{ steps.done.outputs.ok }}
     env:
       KHATA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -238,8 +256,13 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: trunk
+      - name: Make the packaging scripts executable
+        run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Build the web version
-        run: packaging/web/package.sh
+        run: bash packaging/web/package.sh
+      - name: List what was built
+        run: |
+          { echo "### Web build"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: dist-web
@@ -248,10 +271,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/web
+      - name: Mark the web build as good
+        id: done
+        run: echo "ok=true" >> "$GITHUB_OUTPUT"
 
   pages:
     needs: [prepare, web]
-    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.result == 'success' }}
+    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.outputs.ok == 'true' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
@@ -294,12 +320,16 @@ jobs:
           {
             echo "## Downloads"
             echo
-            echo "| Platform | File |"
+            echo "| Platform | Files |"
             echo "|---|---|"
-            echo "| Windows | \`khata-$VERSION-windows-x64.msi\` (installer) or \`...-portable.zip\` |"
-            echo "| macOS | \`khata-$VERSION-macos-universal.dmg\` |"
-            echo "| Linux | \`.AppImage\` (any distro), \`.deb\`, \`.rpm\`, or \`.tar.gz\` |"
-            echo "| Browser | \`khata-web-$VERSION.zip\` (or try the live demo from the repository page) |"
+            row() {
+              files="$(ls dist | grep -vi '^SHA256SUMS' | grep -i -- "$2" | sed 's/.*/`&`/' | paste -sd'|' - | sed 's/|/, /g')"
+              [ -z "$files" ] || echo "| $1 | $files |"
+            }
+            row Windows 'windows'
+            row macOS 'macos'
+            row Linux 'linux'
+            row Browser 'web'
             echo
             echo "> These builds are not code-signed yet. Windows SmartScreen may show *Unknown publisher*"
             echo "> (More info, then Run anyway); on macOS, right-click the app and choose Open."

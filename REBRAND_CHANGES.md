@@ -152,3 +152,19 @@ Found by pushing the first zip to GitHub and building it on Windows:
   `.github/social-preview.png` is a ready-made repository social image.
 - Verified: the workflow YAML parses and `cargo xtask assets` passes (53 assets). **Not verified:**
   the workflow has never run on GitHub. Do a dry run first (see docs/releasing.md).
+
+## 11. Round 4: fixes after the first dry run of the release workflow
+
+Found by running the Release workflow once on GitHub (dry run):
+
+- **Linux, macOS and web jobs failed with "Permission denied".** Git on Windows does not record the
+  executable bit, so the packaging scripts were plain files on the runners, and the workflow ran
+  them directly. Now every script is run with `bash` and `chmod +x`ed first.
+- **The macOS DMG still said WordCraft.** Its window background (`background.tiff`) and Finder
+  layout (`dmg-layout.DS_Store`) are binary files the text rename could not reach. Redrawn as Khata
+  artwork (`make-background.py`) and regenerated with the project's own `generate.py`.
+- **ATTRIBUTION.md:** my earlier script had also rewritten the two DMG rows by accident; corrected.
+- **Pages deploy** is now gated on the web build really succeeding (a job-level `continue-on-error`
+  can report success for a failed job); **release notes** list only files that exist; every job
+  prints what it built in its summary.
+- Windows built the MSI and the portable zip (the dry run's one artifact, `dist-windows`).

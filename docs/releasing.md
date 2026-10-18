@@ -61,3 +61,20 @@ Add the secrets under *Settings › Secrets and variables › Actions* and pass 
 
 `packaging/windows/package.ps1`, `packaging/linux/package.sh`, `packaging/macos/package.sh` and
 `packaging/web/package.sh` produce the same artifacts in `dist/release/` on your own machine.
+
+## Where are the files of a dry run?
+
+Open the run (Actions › Release › the run). Scroll to the very bottom of the **Summary** page: the
+**Artifacts** section lists `dist-windows`, `dist-linux` and so on, each a zip you can download. Each
+job's own summary also lists what it built, with file sizes. The *job* pages never show artifacts.
+
+## Troubleshooting
+
+- **"Permission denied" on a packaging script.** Git on Windows does not record the executable bit,
+  so scripts arrive on Linux/macOS runners as plain files. The workflow runs them with `bash` and
+  `chmod`s them, so this cannot happen. If you run a script by hand on Linux/macOS, use
+  `bash packaging/linux/package.sh` (or `chmod +x` it once).
+- **A best-effort job is red but the run says success.** macOS and the web build are allowed to fail
+  without blocking a release; open that job's log, fix the cause, and re-run.
+- **Only some workflows run after a push.** `Printing` runs only when `Cargo*`, `apps/khata*` or
+  `crates/ui-egui/**` change, and `Nix` only for flake files. `CI` runs on every push.
