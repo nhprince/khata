@@ -8,3 +8,6 @@ plan/
 /.claude/
 /target-*/
 /craft-fonts/
+
+# Release archives and downloaded zips never belong in the repo.
+*.zip

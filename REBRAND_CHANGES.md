@@ -115,6 +115,24 @@ Not possible here, please do on your machine (Rust 1.95+):
 4. Regenerate screenshots (`docs/screenshots.md`).
 5. Build the MSI/DMG/Flatpak on their platforms.
 
+## 9. Round 2: fixes after the first push (CI and local build)
+
+Found by pushing the first zip to GitHub and building it on Windows:
+
+- **`Cargo.lock` was incomplete.** `egui`, `emath` and `epaint` had no `source`/`checksum` lines (a
+  leftover of temporary dependency patches used while testing in a sandbox). `cargo` re-locked them on
+  your machine, and CI, which runs with `--locked`, refused with "cannot update the lock file".
+  Fixed by regenerating the lockfile with plain `cargo` (six lines added); `cargo metadata --locked`
+  now passes.
+- **Clippy (`-D warnings`) would have failed next.** Fixed the six warnings it reports: one of mine
+  (a one-element loop in the Backstage footer) and five in upstream code that older compilers flag:
+  `math_linear.rs`, `docbin/src/fmt.rs`, `proof/src/ru/mod.rs`, `ui-egui/src/objects.rs`. All fixes
+  are behaviour-preserving (De Morgan simplifications, an unused binding).
+- **`khata.zip` had been committed** into the repository. `.gitignore` now ignores `*.zip`.
+- **Line-ending warnings:** added `.gitattributes` (LF everywhere, binaries untouched).
+- **Windows `link.exe not found`:** not a code problem. The Visual Studio C++ Build Tools are
+  required (see the setup guide in the chat).
+
 ## 8. Known limits
 
 - About 70 shapes, not Word's 170+; thumbnails are outlines; callout tails and braces are simplified.
