@@ -138,3 +138,17 @@ Found by pushing the first zip to GitHub and building it on Windows:
 - About 70 shapes, not Word's 170+; thumbnails are outlines; callout tails and braces are simplified.
 - No Bengali translation of the interface yet (the font is ready, the catalog is not).
 - Some translations fall back to English for strings that were changed.
+
+## 10. Automatic releases (round 3)
+
+- `.github/workflows/release.yml`: one click (Actions › Release › Run workflow › type a version) bumps
+  the version, tags it, builds the Windows MSI + portable zip, Linux AppImage/deb/rpm/tar.gz, macOS dmg
+  and the web build, and publishes a GitHub Release with checksums and a change list generated from
+  commit messages. Pushing a `vX.Y.Z` tag does the same. An empty version is a dry run.
+- Windows and Linux are required; macOS and web are best effort; MSI/AppImage failures fall back to
+  the portable zip / deb + tar.gz. The web build is also deployed to GitHub Pages as a live demo.
+- `.github/dependabot.yml` keeps the workflow actions current (one grouped PR a month).
+- `docs/releasing.md` rewritten for this flow; README gained Install, Download and live-demo links;
+  `.github/social-preview.png` is a ready-made repository social image.
+- Verified: the workflow YAML parses and `cargo xtask assets` passes (53 assets). **Not verified:**
+  the workflow has never run on GitHub. Do a dry run first (see docs/releasing.md).

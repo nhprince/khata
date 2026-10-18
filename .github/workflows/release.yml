@@ -1,0 +1,321 @@
+# Khata release pipeline: one click (or one tag) builds every installer and publishes a GitHub Release.
+#
+# HOW TO RELEASE (see docs/releasing.md):
+#   1. GitHub > Actions > "Release" > "Run workflow", type the new version (for example 0.2.0).
+#      The workflow bumps the version, commits, tags v0.2.0, builds everything, and publishes.
+#   2. Leave "version" empty to do a dry run: everything is built and attached to the run, nothing is
+#      published and nothing is committed.
+#   Or, by hand: `cargo xtask version set 0.2.0`, commit, `git tag v0.2.0`, `git push --tags`.
+#
+# Windows and Linux are required; macOS and the web build are best effort (a failure there never
+# blocks the release). Signing is skipped when no signing secrets exist (see docs/releasing.md).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, e.g. 0.2.0 or 0.2.0-beta.1 (empty = dry run, publishes nothing)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ---------------------------------------------------------------------------------------------
+  # Decide the version, bump and tag it when asked to, and tell the other jobs what to build.
+  # ---------------------------------------------------------------------------------------------
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      ref: ${{ steps.v.outputs.ref }}
+      publish: ${{ steps.v.outputs.publish }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+      - name: Work out the version
+        id: v
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          semver='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
+          current="$(awk '/^\[/ { p = ($0 == "[workspace.package]"); next } p && $1 == "version" { gsub(/"/, "", $3); print $3; exit }' Cargo.toml)"
+          [ -n "$current" ] || { echo "::error::could not read [workspace.package] version from Cargo.toml"; exit 1; }
+
+          if [ "$EVENT" = "push" ]; then
+            # A pushed tag vX.Y.Z: the version in Cargo.toml must already match it.
+            version="${REF_NAME#v}"
+            [[ "$version" =~ $semver ]] || { echo "::error::tag '$REF_NAME' is not vX.Y.Z"; exit 1; }
+            if [ "$version" != "$current" ]; then
+              echo "::error::tag $REF_NAME does not match Cargo.toml version $current. Run 'cargo xtask version set $version', commit, and re-tag."
+              exit 1
+            fi
+            publish=true
+            ref="$GITHUB_SHA"
+          elif [ -n "$INPUT_VERSION" ]; then
+            # One-click release: bump, commit, tag.
+            version="${INPUT_VERSION#v}"
+            [[ "$version" =~ $semver ]] || { echo "::error::'$INPUT_VERSION' is not a version like 1.2.3 or 1.2.3-beta.1"; exit 1; }
+            [ "$REF_TYPE" = "branch" ] || { echo "::error::run this workflow from a branch (usually main), not a tag"; exit 1; }
+            if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+              echo "::error::tag v$version already exists"; exit 1
+            fi
+            cargo xtask version set "$version"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Cargo.toml Cargo.lock
+            git diff --cached --quiet || git commit -m "Release v$version"
+            git tag "v$version"
+            git push origin "HEAD:refs/heads/$REF_NAME"
+            git push origin "refs/tags/v$version"
+            publish=true
+            ref="$(git rev-parse HEAD)"
+          else
+            # Dry run: build the current version, publish nothing.
+            version="$current"
+            publish=false
+            ref="$GITHUB_SHA"
+          fi
+
+          prerelease=false
+          [[ "$version" == *-* ]] && prerelease=true
+          {
+            echo "version=$version"
+            echo "ref=$ref"
+            echo "publish=$publish"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version $version (publish=$publish, commit $ref)"
+
+  # ---------------------------------------------------------------------------------------------
+  # Windows: MSI installer + portable zip (required).
+  # ---------------------------------------------------------------------------------------------
+  windows:
+    needs: prepare
+    runs-on: windows-latest
+    env:
+      KHATA_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\.dotnet\tools"
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          wix extension add -g WixToolset.Util.wixext/5.0.2
+      - name: Package (MSI and portable zip)
+        id: pkg
+        continue-on-error: true
+        shell: pwsh
+        run: ./packaging/windows/package.ps1 -Arch x64
+      - name: Fallback (portable zip only)
+        if: steps.pkg.outcome == 'failure'
+        shell: pwsh
+        run: |
+          Write-Output "::warning::The MSI build failed; shipping the portable zip only."
+          $bin = "target/x86_64-pc-windows-msvc/release"
+          if (-not (Test-Path "$bin/khata.exe")) { throw "khata.exe was not built" }
+          $name = "khata-$env:KHATA_VERSION-windows-x64-portable"
+          New-Item -ItemType Directory -Force "dist/release/$name" | Out-Null
+          Copy-Item "$bin/khata.exe", "$bin/khata-cli.exe", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE" "dist/release/$name"
+          Compress-Archive -Path "dist/release/$name" -DestinationPath "dist/release/$name.zip" -Force
+          Remove-Item -Recurse -Force "dist/release/$name"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: dist/release/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------------------------
+  # Linux: AppImage, .deb, .rpm and .tar.gz (required). Built on Ubuntu 22.04 so it runs on newer distros.
+  # ---------------------------------------------------------------------------------------------
+  linux:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    env:
+      KHATA_VERSION: ${{ needs.prepare.outputs.version }}
+      APPIMAGE_EXTRACT_AND_RUN: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - name: Install build and packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxrandr-dev \
+            libxi-dev libgtk-3-dev libfontconfig1-dev libfreetype-dev \
+            desktop-file-utils appstream zsync file
+      - name: Install nfpm (deb and rpm builder)
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Package (AppImage, deb, rpm, tar.gz)
+        id: pkg
+        continue-on-error: true
+        run: packaging/linux/package.sh
+      - name: Fallback (deb and tar.gz only)
+        if: steps.pkg.outcome == 'failure'
+        run: |
+          echo "::warning::The full Linux packaging failed; shipping deb and tar.gz only."
+          packaging/linux/package.sh --skip-build --formats "deb tar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: dist/release/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------------------------
+  # macOS: universal .dmg (best effort; ad-hoc signed unless Apple secrets are added).
+  # ---------------------------------------------------------------------------------------------
+  macos:
+    needs: prepare
+    runs-on: macos-latest
+    continue-on-error: true
+    env:
+      KHATA_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Package (universal dmg and CLI zip)
+        run: packaging/macos/package.sh --arch universal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: dist/release/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------------------------
+  # Web: the in-browser version as a zip, and as a live demo on GitHub Pages (best effort).
+  # ---------------------------------------------------------------------------------------------
+  web:
+    needs: prepare
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      KHATA_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - name: Build the web version
+        run: packaging/web/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-web
+          path: dist/release/*
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+  pages:
+    needs: [prepare, web]
+    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.result == 'success' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------------------------
+  # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.
+  # ---------------------------------------------------------------------------------------------
+  release:
+    needs: [prepare, windows, linux, macos, web]
+    if: ${{ always() && needs.prepare.outputs.publish == 'true' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums and release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          tag="v$VERSION"
+          prev="$(git describe --tags --abbrev=0 --match 'v*' "${tag}^" 2>/dev/null || true)"
+          range="${prev:+$prev..}$tag"
+          {
+            echo "## Downloads"
+            echo
+            echo "| Platform | File |"
+            echo "|---|---|"
+            echo "| Windows | \`khata-$VERSION-windows-x64.msi\` (installer) or \`...-portable.zip\` |"
+            echo "| macOS | \`khata-$VERSION-macos-universal.dmg\` |"
+            echo "| Linux | \`.AppImage\` (any distro), \`.deb\`, \`.rpm\`, or \`.tar.gz\` |"
+            echo "| Browser | \`khata-web-$VERSION.zip\` (or try the live demo from the repository page) |"
+            echo
+            echo "> These builds are not code-signed yet. Windows SmartScreen may show *Unknown publisher*"
+            echo "> (More info, then Run anyway); on macOS, right-click the app and choose Open."
+            echo "> Verify downloads with \`SHA256SUMS.txt\`."
+            echo
+            echo "## What's changed"
+            echo
+            git log --no-merges --pretty='- %s (%h)' "$range" | grep -v '^- Release v' || echo "- First release"
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ needs.prepare.outputs.ref }}
+          name: Khata v${{ needs.prepare.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+          files: dist/*
+          fail_on_unmatched_files: true

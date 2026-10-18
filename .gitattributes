@@ -1,0 +1,15 @@
+# Keep line endings identical on every OS: LF in the repository and in working copies, so Windows
+# checkouts do not turn source files into CRLF (and `cargo fmt --check` and `--locked` stay happy).
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.png   binary
+*.ico   binary
+*.icns  binary
+*.bmp   binary
+*.tiff  binary
+*.ttf   binary
+*.otf   binary
+*.zip   binary
+.DS_Store binary
+*.DS_Store binary
