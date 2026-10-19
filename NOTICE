@@ -86,3 +86,11 @@ The backend patch prevents finalization during an unwind and rejects a writer af
 cleanup. WordCraft enables only writing; PDF import and its image decoders are not enabled.
 
 No Microsoft, Adobe, Avid or Autodesk icons, images, templates or artwork are included.
+
+Changes made by Khata (Apache-2.0 section 4(b)): Khata modifies the original WordCraft source. The
+modifications include the rename to Khata, a new scrapbook theme and fonts, a Shapes gallery with
+preset shapes, simple mode, packaging and release automation, and new artwork. The complete list is in
+REBRAND_CHANGES.md and in the git history of https://github.com/nhprince/khata.
+
+Third-party components and their license texts are in THIRD_PARTY_LICENSES.txt, which is generated
+by packaging/third-party-licenses.py and shipped with every release.

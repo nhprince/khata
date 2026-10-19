@@ -129,6 +129,9 @@ jobs:
           $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
           wix extension add -g WixToolset.UI.wixext/5.0.2
           wix extension add -g WixToolset.Util.wixext/5.0.2
+      - name: Generate THIRD_PARTY_LICENSES.txt (also fails on a disallowed license)
+        shell: pwsh
+        run: python packaging/third-party-licenses.py
       - name: Package (MSI and portable zip)
         id: pkg
         continue-on-error: true
@@ -146,6 +149,9 @@ jobs:
           Copy-Item "$bin/khata.exe", "$bin/khata-cli.exe", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE" "dist/release/$name"
           Compress-Archive -Path "dist/release/$name" -DestinationPath "dist/release/$name.zip" -Force
           Remove-Item -Recurse -Force "dist/release/$name"
+      - name: Add the third-party license notice to the release files
+        shell: pwsh
+        run: Copy-Item THIRD_PARTY_LICENSES.txt dist/release/
       - name: List what was built
         shell: pwsh
         run: |
@@ -183,6 +189,8 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Generate THIRD_PARTY_LICENSES.txt (also fails on a disallowed license)
+        run: python3 packaging/third-party-licenses.py
       - name: Make the packaging scripts executable
         run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Package (AppImage, deb, rpm, tar.gz)
@@ -221,6 +229,8 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Generate THIRD_PARTY_LICENSES.txt (also fails on a disallowed license)
+        run: python3 packaging/third-party-licenses.py
       - name: Make the packaging scripts executable
         run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Package (universal dmg and CLI zip)
@@ -256,6 +266,8 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: trunk
+      - name: Generate THIRD_PARTY_LICENSES.txt (also fails on a disallowed license)
+        run: python3 packaging/third-party-licenses.py
       - name: Make the packaging scripts executable
         run: find packaging -name '*.sh' -exec chmod +x {} +
       - name: Build the web version
@@ -289,6 +301,19 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+
+  # After the release is published: put the same web build on Cloudflare Pages (skips itself, without
+  # failing, until Cloudflare is set up; see docs/cloudflare-pages.md). It lives after `release`, so
+  # a failed release never updates the live site.
+  cloudflare:
+    needs: [prepare, web, release]
+    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.outputs.ok == 'true' && needs.release.result == 'success' }}
+    uses: ./.github/workflows/web-cloudflare.yml
+    with:
+      ref: ${{ needs.prepare.outputs.ref }}
+    secrets: inherit
+    permissions:
+      contents: read
 
   # ---------------------------------------------------------------------------------------------
   # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.
@@ -332,7 +357,9 @@ jobs:
             row Browser 'web'
             echo
             echo "> These builds are not code-signed yet. Windows SmartScreen may show *Unknown publisher*"
-            echo "> (More info, then Run anyway); on macOS, right-click the app and choose Open."
+            echo "> (More info, then Run anyway). On macOS 15 or later, open the app once, then go to"
+            echo "> System Settings > Privacy & Security and click *Open Anyway*."
+            echo "> Open-source license notices: \`THIRD_PARTY_LICENSES.txt\` (also inside the packages)."
             echo "> Verify downloads with \`SHA256SUMS.txt\`."
             echo
             echo "## What's changed"

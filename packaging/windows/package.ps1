@@ -141,7 +141,7 @@ $Portable = Join-Path $TargetDir "windows-package\khata-$Version-windows-$Arch-p
 Remove-Item -Recurse -Force $Portable -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $Portable | Out-Null
 Copy-Item (Join-Path $Stage '*.exe') $Portable
-foreach ($f in 'README.md', 'LICENSE', 'LICENSE-MIT', 'LICENSE-APACHE') {
+foreach ($f in 'README.md', 'LICENSE', 'LICENSE-MIT', 'LICENSE-APACHE', 'NOTICE', 'THIRD_PARTY_LICENSES.txt') {
   $p = Join-Path $Root $f
   if (Test-Path $p) { Copy-Item $p $Portable }
 }

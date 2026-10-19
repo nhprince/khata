@@ -11,3 +11,6 @@ plan/
 
 # Release archives and downloaded zips never belong in the repo.
 *.zip
+
+# Generated at release time by packaging/third-party-licenses.py
+THIRD_PARTY_LICENSES.txt

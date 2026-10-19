@@ -168,3 +168,17 @@ Found by running the Release workflow once on GitHub (dry run):
   can report success for a failed job); **release notes** list only files that exist; every job
   prints what it built in its summary.
 - Windows built the MSI and the portable zip (the dry run's one artifact, `dist-windows`).
+
+## 12. Round 5 (final state): Cloudflare after release, licensing
+
+- **Cloudflare Pages:** `.github/workflows/web-cloudflare.yml` deploys the web build to Cloudflare Pages
+  **after each successful release** (the Release workflow calls it once the release is published) or by
+  hand. It does not run on ordinary pushes, and it skips itself until the `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` secrets exist. Setup: `docs/cloudflare-pages.md`.
+- **Licensing:** `packaging/third-party-licenses.py` audits all 538 dependency licenses (all permissive
+  or MPL-2.0) and generates `THIRD_PARTY_LICENSES.txt` for each release; CI runs the audit. `NOTICE` is
+  now copied into every package (Apache-2.0 requires it) and states the changes made. New:
+  `docs/licensing.md`, `SECURITY.md`, `CONTRIBUTING.md`.
+- Release notes: macOS 15 instructions ("Open Anyway"); a leftover "image editor" title fixed.
+- **Code signing was evaluated and deliberately not adopted** (Windows shows "Unknown publisher" and
+  works). Nothing in the repository signs files.

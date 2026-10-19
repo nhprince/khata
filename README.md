@@ -60,6 +60,13 @@ cargo run --release -p khata-cli -- --help
 
 Checks: `cargo xtask ci` (formatting, clippy, tests, the asset-attribution check and layering rules).
 
+## Trust and verification
+
+Every release file has a SHA-256 checksum in `SHA256SUMS.txt`, and the open-source license notices ship
+with it (`THIRD_PARTY_LICENSES.txt`). The Windows and macOS builds are not code-signed (Windows shows
+"Unknown publisher"). Licensing: [`docs/licensing.md`](docs/licensing.md). Security reports:
+[`SECURITY.md`](SECURITY.md). Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Project layout
 
 | Path | What |

@@ -29,3 +29,5 @@ jobs:
         run: cargo check --workspace --all-targets
       - name: Test the document model, engine and interface
         run: cargo test -p khata-doc -p khata-engine -p khata-ui-egui --lib
+      - name: Audit dependency licenses (fails on a copyleft or unknown license)
+        run: python3 packaging/third-party-licenses.py --check
