@@ -41,8 +41,8 @@ and prints a warning in the run.
 
 ## Web hosting
 
-Each release updates the GitHub Pages demo and, once the release is published, the Cloudflare Pages
-site (`docs/cloudflare-pages.md`, set up once; it skips itself until then).
+Each release updates the GitHub Pages demo. Cloudflare can serve it through its CDN on your own
+domain without any extra deployment: see `docs/cloudflare-cdn.md`.
 
 ## Notices and verification
 

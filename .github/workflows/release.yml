@@ -302,19 +302,6 @@ jobs:
       - id: deploy
         uses: actions/deploy-pages@v4
 
-  # After the release is published: put the same web build on Cloudflare Pages (skips itself, without
-  # failing, until Cloudflare is set up; see docs/cloudflare-pages.md). It lives after `release`, so
-  # a failed release never updates the live site.
-  cloudflare:
-    needs: [prepare, web, release]
-    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.outputs.ok == 'true' && needs.release.result == 'success' }}
-    uses: ./.github/workflows/web-cloudflare.yml
-    with:
-      ref: ${{ needs.prepare.outputs.ref }}
-    secrets: inherit
-    permissions:
-      contents: read
-
   # ---------------------------------------------------------------------------------------------
   # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.
   # ---------------------------------------------------------------------------------------------

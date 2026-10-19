@@ -171,10 +171,8 @@ Found by running the Release workflow once on GitHub (dry run):
 
 ## 12. Round 5 (final state): Cloudflare after release, licensing
 
-- **Cloudflare Pages:** `.github/workflows/web-cloudflare.yml` deploys the web build to Cloudflare Pages
-  **after each successful release** (the Release workflow calls it once the release is published) or by
-  hand. It does not run on ordinary pushes, and it skips itself until the `CLOUDFLARE_API_TOKEN` and
-  `CLOUDFLARE_ACCOUNT_ID` secrets exist. Setup: `docs/cloudflare-pages.md`.
+- **Cloudflare:** a Cloudflare Pages deployment was tried and removed (see section 14); Cloudflare now
+  fronts the GitHub Pages demo instead: `docs/cloudflare-cdn.md`.
 - **Licensing:** `packaging/third-party-licenses.py` audits all 538 dependency licenses (all permissive
   or MPL-2.0) and generates `THIRD_PARTY_LICENSES.txt` for each release; CI runs the audit. `NOTICE` is
   now copied into every package (Apache-2.0 requires it) and states the changes made. New:
@@ -182,3 +180,12 @@ Found by running the Release workflow once on GitHub (dry run):
 - Release notes: macOS 15 instructions ("Open Anyway"); a leftover "image editor" title fixed.
 - **Code signing was evaluated and deliberately not adopted** (Windows shows "Unknown publisher" and
   works). Nothing in the repository signs files.
+
+## 14. Round 7: Cloudflare Pages could not work (file size), replaced
+
+- The Cloudflare Pages deploy failed in its own size check: the web build's `.wasm` is larger than
+  Cloudflare Pages' 25 MiB per-file limit (the site is about 42 MB; my earlier "about 13 MB" came from
+  an outdated figure in the upstream README and was never measured).
+- Removed `.github/workflows/web-cloudflare.yml`, the `cloudflare` job in `release.yml`, and
+  `docs/cloudflare-pages.md`. GitHub Pages (limit 100 MB per file) keeps hosting the site; Cloudflare
+  sits in front of it as a CDN on your own domain (`docs/cloudflare-cdn.md`), with nothing to deploy.
