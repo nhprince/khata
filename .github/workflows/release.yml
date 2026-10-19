@@ -157,7 +157,7 @@ jobs:
         run: |
           $files = Get-ChildItem dist/release | ForEach-Object { "{0,12:N0} bytes  {1}" -f $_.Length, $_.Name }
           @("### Windows packages", '```') + $files + @('```') | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-windows
           path: dist/release/*
@@ -206,7 +206,7 @@ jobs:
         shell: bash
         run: |
           { echo "### Linux packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-linux
           path: dist/release/*
@@ -238,7 +238,7 @@ jobs:
       - name: List what was built
         run: |
           { echo "### macOS packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-macos
           path: dist/release/*
@@ -275,12 +275,12 @@ jobs:
       - name: List what was built
         run: |
           { echo "### Web build"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-web
           path: dist/release/*
           if-no-files-found: error
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/web
       - name: Mark the web build as good
@@ -300,7 +300,7 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # ---------------------------------------------------------------------------------------------
   # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.
@@ -316,7 +316,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: dist
@@ -354,7 +354,7 @@ jobs:
             git log --no-merges --pretty='- %s (%h)' "$range" | grep -v '^- Release v' || echo "- First release"
           } > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           target_commitish: ${{ needs.prepare.outputs.ref }}
