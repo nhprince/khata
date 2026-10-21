@@ -1,0 +1,59 @@
+# The Khata web app (app.khata.bond): builds the browser version and deploys it to GitHub Pages on every
+# push to main that changes the app or anything it is built from (or by hand: Actions > "App
+# (app.khata.bond)" > Run workflow). GitHub Pages is used because the app's .wasm file is larger than
+# Cloudflare Pages' 25 MiB per-file limit. Setup, domains and DNS: docs/hosting.md.
+name: App (app.khata.bond)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/khata-web/**"
+      - "crates/**"
+      - "assets/**"
+      - "packaging/web/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/site-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - name: Build the web app
+        run: |
+          find packaging -name '*.sh' -exec chmod +x {} +
+          bash packaging/web/package.sh
+          du -sh dist/web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

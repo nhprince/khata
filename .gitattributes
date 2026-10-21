@@ -13,3 +13,4 @@
 *.zip   binary
 .DS_Store binary
 *.DS_Store binary
+*.woff2 binary

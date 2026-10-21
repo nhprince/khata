@@ -172,7 +172,7 @@ Found by running the Release workflow once on GitHub (dry run):
 ## 12. Round 5 (final state): Cloudflare after release, licensing
 
 - **Cloudflare:** a Cloudflare Pages deployment was tried and removed (see section 14); Cloudflare now
-  fronts the GitHub Pages demo instead: `docs/cloudflare-cdn.md`.
+  is now used for the website (section 15).
 - **Licensing:** `packaging/third-party-licenses.py` audits all 538 dependency licenses (all permissive
   or MPL-2.0) and generates `THIRD_PARTY_LICENSES.txt` for each release; CI runs the audit. `NOTICE` is
   now copied into every package (Apache-2.0 requires it) and states the changes made. New:
@@ -188,4 +188,21 @@ Found by running the Release workflow once on GitHub (dry run):
   an outdated figure in the upstream README and was never measured).
 - Removed `.github/workflows/web-cloudflare.yml`, the `cloudflare` job in `release.yml`, and
   `docs/cloudflare-pages.md`. GitHub Pages (limit 100 MB per file) keeps hosting the site; Cloudflare
-  sits in front of it as a CDN on your own domain (`docs/cloudflare-cdn.md`), with nothing to deploy.
+  hosts the app; the small website lives on Cloudflare Pages (section 15).
+
+## 15. Round 8: website at khata.bond, app at app.khata.bond
+
+- **New website** in `site/`: a responsive, accessible landing page in the scrapbook style (light and dark),
+  with an illustrated app window, feature notes, live download buttons that read the latest GitHub
+  release (and highlight the visitor's system), a FAQ, a 404 page, SEO and link-preview tags, a strict
+  Content-Security-Policy in `site/_headers`, self-hosted WOFF2 fonts, no cookies, no trackers.
+- **Two workflows:** `site-landing.yml` deploys `site/` to Cloudflare Pages on every push that changes it;
+  `site-app.yml` builds the web app and deploys it to GitHub Pages on every relevant push. The release
+  workflow no longer deploys the web app (it still attaches the web zip). `packaging/check-site.py`
+  validates the site in CI and before each deploy.
+- **Why the domain did not connect:** GitHub also checks `www.khata.bond` for a bare domain and found no
+  record, and the HTTPS certificate was still pending. The new split (bare domain on Cloudflare Pages, only
+  `app` on GitHub Pages) removes both problems. Exact steps: `docs/hosting.md`.
+- Removed `docs/cloudflare-cdn.md` (superseded by `docs/hosting.md`).
+- Not verified: the pages have not been opened in a real browser (only the hero artwork was rendered, the
+  script was syntax-checked, and every link and file reference was validated).

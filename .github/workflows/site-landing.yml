@@ -1,0 +1,73 @@
+# The Khata website (khata.bond): deploys the static site in site/ to Cloudflare Pages on every push to
+# main that changes it (or by hand: Actions > "Site (khata.bond)" > Run workflow).
+#
+# It checks the site first, and does nothing (without failing) until the two secrets exist:
+#   CLOUDFLARE_API_TOKEN   token with  Account > Cloudflare Pages > Edit
+#   CLOUDFLARE_ACCOUNT_ID  your Cloudflare account id
+# Optional repository variable CLOUDFLARE_PROJECT: the Pages project name (default: khata).
+# Setup, domains and DNS: docs/hosting.md.
+name: Site (khata.bond)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "packaging/check-site.py"
+      - ".github/workflows/site-landing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-landing
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT: ${{ vars.CLOUDFLARE_PROJECT || 'khata' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check the site (links, fonts, images, security policy)
+        run: python3 packaging/check-site.py
+      - name: Check that Cloudflare is configured
+        id: cfg
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Cloudflare is not configured yet (secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID); the site was checked but not deployed. See docs/hosting.md."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create the Pages project if it does not exist yet
+        if: steps.cfg.outputs.configured == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ env.PROJECT }} --production-branch=main
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        if: steps.cfg.outputs.configured == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=${{ env.PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true
+      - name: Summary
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          {
+            echo "### Website deployed"
+            echo "Deployment: ${URL:-see the Cloudflare dashboard}"
+            echo "Live at https://${PROJECT}.pages.dev and on your custom domain"
+          } >> "$GITHUB_STEP_SUMMARY"

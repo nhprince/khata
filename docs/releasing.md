@@ -41,8 +41,9 @@ and prints a warning in the run.
 
 ## Web hosting
 
-Each release updates the GitHub Pages demo. Cloudflare can serve it through its CDN on your own
-domain without any extra deployment: see `docs/cloudflare-cdn.md`.
+The website (khata.bond) and the web app (app.khata.bond) are published by their own workflows on
+every push, not by the release; the download buttons on the website read the latest release by
+themselves. Setup and domains: `docs/hosting.md`.
 
 ## Notices and verification
 

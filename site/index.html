@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khata (খাতা): a notebook-style word processor</title>
+  <meta name="description" content="Khata is a free, open-source word processor with a notebook feel. It opens and saves .docx files and runs on Windows, macOS, Linux and in your browser. No account, no tracking.">
+  <link rel="canonical" href="https://khata.bond/">
+  <meta name="theme-color" content="#FFD93D">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Khata">
+  <meta property="og:title" content="Khata (খাতা): a notebook-style word processor">
+  <meta property="og:description" content="Write, doodle and keep it all in one khata. Free, open source, runs everywhere.">
+  <meta property="og:url" content="https://khata.bond/">
+  <meta property="og:image" content="https://khata.bond/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/caveat-brush.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/patrick-hand.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/main.js" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Khata",
+    "alternateName": "খাতা",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Windows, macOS, Linux, Web",
+    "description": "A free, open-source, notebook-style word processor that opens and saves .docx files.",
+    "url": "https://khata.bond/",
+    "license": "https://github.com/nhprince/khata/blob/main/LICENSE-MIT",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "NH Prince Pradhan", "url": "https://nhprince.me" }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="/" aria-label="Khata home">
+        <img src="/img/khata-mark.svg" width="40" height="41" alt="">
+        <span class="brand-name">Khata</span><span class="bn" lang="bn">খাতা</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">
+        <span class="sr-only">Menu</span><span class="bars" aria-hidden="true"></span>
+      </button>
+      <nav id="nav" class="nav" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/nhprince/khata" rel="noopener">GitHub</a>
+        <a class="btn btn-primary btn-small" href="https://app.khata.bond">Open the app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============================ HERO ============================ -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="kicker"><span class="tape-label">free · open source · no account</span></p>
+          <h1>Your words, in a notebook <span class="scribble">that feels like yours.</span></h1>
+          <p class="lead">Khata is a notebook-style word processor. Write, doodle and keep everything in one <em lang="bn">খাতা</em>. It opens and saves your <strong>.docx</strong> files and runs on Windows, macOS, Linux and right in your browser.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://app.khata.bond">Open in your browser <span aria-hidden="true">&rarr;</span></a>
+            <a class="btn btn-ghost" href="#download" data-download-cta>Download</a>
+          </div>
+          <p class="fine">Nothing to sign up for. Your documents stay on your device.</p>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <svg viewBox="0 0 600 460" role="img" focusable="false">
+            <title>An illustration of the Khata window: a sticky-note tab, a page with a heading and shapes</title>
+            <g class="float">
+              <rect x="64" y="62" width="500" height="372" rx="22" class="svg-shadow"/>
+              <rect x="46" y="44" width="500" height="372" rx="22" class="svg-window"/>
+              <!-- title bar -->
+              <path d="M46 66a22 22 0 0 1 22-22h456a22 22 0 0 1 22 22v28H46z" class="svg-bar"/>
+              <circle cx="78" cy="69" r="7" class="svg-dot1"/><circle cx="102" cy="69" r="7" class="svg-dot2"/><circle cx="126" cy="69" r="7" class="svg-dot3"/>
+              <text x="296" y="76" text-anchor="middle" class="svg-brush svg-title">Handbook — Khata</text>
+              <defs><clipPath id="win-clip"><rect x="46" y="44" width="500" height="372" rx="22"/></clipPath></defs>
+              <g clip-path="url(#win-clip)">
+              <!-- tabs -->
+              <rect x="46" y="94" width="500" height="34" class="svg-tabs"/>
+              <rect x="66" y="99" width="68" height="26" rx="8" class="svg-tab-on"/>
+              <text x="100" y="118" text-anchor="middle" class="svg-hand svg-small">Home</text>
+              <text x="170" y="118" text-anchor="middle" class="svg-hand svg-small">Insert</text>
+              <text x="240" y="118" text-anchor="middle" class="svg-hand svg-small">Layout</text>
+              <text x="318" y="118" text-anchor="middle" class="svg-hand svg-small">Review</text>
+              <!-- ribbon -->
+              <rect x="46" y="128" width="500" height="52" class="svg-ribbon"/>
+              <rect x="66" y="140" width="28" height="28" rx="7" class="svg-chip"/>
+              <rect x="102" y="140" width="28" height="28" rx="7" class="svg-chip svg-chip-on"/>
+              <rect x="138" y="140" width="28" height="28" rx="7" class="svg-chip"/>
+              <rect x="190" y="146" width="96" height="16" rx="8" class="svg-chip"/>
+              <rect x="300" y="146" width="44" height="16" rx="8" class="svg-chip"/>
+              <rect x="372" y="140" width="28" height="28" rx="7" class="svg-chip"/>
+              <rect x="408" y="140" width="28" height="28" rx="7" class="svg-chip"/>
+              <!-- paper -->
+              <rect x="46" y="180" width="500" height="236" class="svg-desk"/>
+              <rect x="92" y="196" width="408" height="220" class="svg-page"/>
+              <text x="118" y="244" class="svg-brush svg-h">The Open Studio</text>
+              <text x="118" y="284" class="svg-brush svg-h">Handbook</text>
+              <path d="M118 296q26-8 52 0t52 0t52 0" class="svg-squiggle"/>
+              <rect x="118" y="318" width="190" height="9" rx="4.5" class="svg-line"/>
+              <rect x="118" y="338" width="160" height="9" rx="4.5" class="svg-line"/>
+              <rect x="118" y="358" width="205" height="9" rx="4.5" class="svg-line"/>
+              <rect x="118" y="378" width="120" height="9" rx="4.5" class="svg-line"/>
+              <!-- shapes -->
+              <polygon points="410,236 452,252 444,300 396,302 384,266" class="svg-pent"/>
+              <path d="M444 334c-14-22-44-6-30 16c8 12 24 20 30 28c6-8 22-16 30-28c14-22-16-38-30-16z" class="svg-heart"/>
+              </g>
+              <rect x="46" y="44" width="500" height="372" rx="22" class="svg-frame"/>
+              <!-- tape and sticker -->
+              <rect x="440" y="24" width="96" height="30" transform="rotate(8 488 39)" class="svg-tape"/>
+              <g transform="rotate(-10 78 380)">
+                <circle cx="78" cy="380" r="40" class="svg-sticker"/>
+                <text x="78" y="396" text-anchor="middle" class="svg-bn">খ</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ FEATURES ============================ -->
+    <section id="features" class="section">
+      <div class="wrap">
+        <h2>Everything you need to write, nothing in the way.</h2>
+        <p class="section-lead">Khata keeps the familiar word-processor layout and puts it on a page that feels like paper.</p>
+
+        <div class="notes">
+          <article class="note note-a">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="4" width="19" height="24" rx="3"/><path d="M11 10h11M11 15h11M11 20h7"/><path d="M4 9h4M4 15h4M4 21h4"/></svg>
+            <h3>A notebook, not a toolbox</h3>
+            <p>Cream paper, a dotted desk and hand-lettered headings. The ribbon starts simple and shows only the tabs most people use; the advanced ones are one switch away.</p>
+          </article>
+          <article class="note note-b">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 3h11l6 6v20H8z"/><path d="M19 3v6h6"/><path d="M12 16h9M12 21h9M12 26h5"/></svg>
+            <h3>Opens and saves .docx</h3>
+            <p>Work with Word documents, plus OpenDocument, RTF, Markdown and HTML, and export to PDF. Your files stay in open formats you can take anywhere.</p>
+          </article>
+          <article class="note note-c">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 25l6-12 6 12z"/><circle cx="22" cy="10" r="5"/><rect x="17" y="19" width="9" height="8" rx="1.5"/></svg>
+            <h3>Shapes and doodles</h3>
+            <p>A gallery of about 70 shapes in clear categories (arrows, flowcharts, stars, speech bubbles) with a Recently Used row, ready to drop onto the page.</p>
+          </article>
+          <article class="note note-d">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="24" height="16" rx="2.5"/><path d="M12 27h8M16 22v5"/></svg>
+            <h3>Works wherever you do</h3>
+            <p>Windows, macOS and Linux apps, plus a version that runs in any modern browser. The interface is available in more than 20 languages.</p>
+          </article>
+          <article class="note note-e">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="14" width="18" height="13" rx="3"/><path d="M11 14v-3a5 5 0 0 1 10 0v3"/><circle cx="16" cy="20.5" r="1.6"/></svg>
+            <h3>Private by design</h3>
+            <p>No account, no telemetry, no ads. Khata does not connect to the internet by itself, and your documents stay on your own computer.</p>
+          </article>
+          <article class="note note-f">
+            <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 9l-7 7 7 7M20 9l7 7-7 7"/><path d="M18 6l-4 20"/></svg>
+            <h3>Open source, for good</h3>
+            <p>Written in Rust and licensed under MIT or Apache-2.0. Read it, change it, and share it. Khata builds on the open-source WordCraft project, with credit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ DOWNLOAD ============================ -->
+    <section id="download" class="section section-kraft">
+      <div class="wrap">
+        <h2>Get Khata</h2>
+        <p class="section-lead">Free forever. <span data-release-version>The latest version is on GitHub.</span></p>
+
+        <div class="downloads">
+          <article class="dl" data-os="windows">
+            <h3>Windows</h3>
+            <p class="desc">Windows 10 and 11, 64-bit</p>
+            <div class="dl-links" data-links>
+              <a class="btn btn-primary" href="https://github.com/nhprince/khata/releases/latest">Download for Windows</a>
+            </div>
+            <p class="meta" data-meta>Installer (.msi) or portable zip</p>
+          </article>
+          <article class="dl" data-os="macos">
+            <h3>macOS</h3>
+            <p class="desc">Apple silicon and Intel</p>
+            <div class="dl-links" data-links>
+              <a class="btn btn-primary" href="https://github.com/nhprince/khata/releases/latest">Download for macOS</a>
+            </div>
+            <p class="meta" data-meta>Disk image (.dmg)</p>
+          </article>
+          <article class="dl" data-os="linux">
+            <h3>Linux</h3>
+            <p class="desc">Any modern distribution</p>
+            <div class="dl-links" data-links>
+              <a class="btn btn-primary" href="https://github.com/nhprince/khata/releases/latest">Download for Linux</a>
+            </div>
+            <p class="meta" data-meta>AppImage, .deb, .rpm or .tar.gz</p>
+          </article>
+          <article class="dl" data-os="web">
+            <h3>In your browser</h3>
+            <p class="desc">Nothing to install</p>
+            <div class="dl-links">
+              <a class="btn btn-ghost" href="https://app.khata.bond">Open the web app</a>
+            </div>
+            <p class="meta">Runs on your device, in any modern browser</p>
+          </article>
+        </div>
+
+        <p class="fine center">Every release has a <code>SHA256SUMS.txt</code> so you can check your download. <a href="https://github.com/nhprince/khata/releases">All releases</a> · <a href="https://github.com/nhprince/khata#build-from-source">Build from source</a></p>
+      </div>
+    </section>
+
+    <!-- ============================ FAQ ============================ -->
+    <section id="faq" class="section">
+      <div class="wrap narrow">
+        <h2>Questions, answered</h2>
+        <div class="faq">
+          <details>
+            <summary>Is Khata really free?</summary>
+            <p>Yes. It is open source under the MIT or Apache-2.0 license: free to use, change and share, with no account, subscription or ads.</p>
+          </details>
+          <details>
+            <summary>Windows says &ldquo;Unknown publisher.&rdquo; Is it safe?</summary>
+            <p>Khata is a small open-source project and its installer is not code-signed yet, so Windows shows that notice. Choose <strong>More info</strong>, then <strong>Run anyway</strong>. You can compare the file with <code>SHA256SUMS.txt</code> on the release page, and the whole source code is public on GitHub.</p>
+          </details>
+          <details>
+            <summary>macOS says it cannot open the app.</summary>
+            <p>The app is not notarized by Apple yet. On macOS 15 or later, try to open it once, then go to <strong>System Settings &rsaquo; Privacy &amp; Security</strong> and click <strong>Open Anyway</strong>. On earlier versions, right-click the app and choose Open.</p>
+          </details>
+          <details>
+            <summary>Can I open my Word documents?</summary>
+            <p>Yes. Khata opens and saves <strong>.docx</strong> files, and also reads and writes OpenDocument (.odt), RTF, Markdown and HTML, and exports PDF. Very complex layouts may look slightly different, so keep a backup of important files.</p>
+          </details>
+          <details>
+            <summary>Is this a copy of Microsoft Word?</summary>
+            <p>No. Khata is an independent, open-source program and is not affiliated with or endorsed by Microsoft. It is a credited fork of the open-source WordCraft project, with a new look, new features and a new name. &ldquo;Microsoft&rdquo; and &ldquo;Word&rdquo; are trademarks of Microsoft Corporation.</p>
+          </details>
+          <details>
+            <summary>Where do my documents go?</summary>
+            <p>They stay on your device. Khata has no accounts and no cloud, and it sends no telemetry. The web version runs entirely in your browser.</p>
+          </details>
+          <details>
+            <summary>What does &ldquo;Khata&rdquo; mean?</summary>
+            <p><em lang="bn">খাতা</em> (khata) is the Bengali word for a notebook or ledger: the exercise book you carry to school and the book you keep accounts in.</p>
+          </details>
+          <details>
+            <summary>How can I help?</summary>
+            <p>Report a bug, suggest a feature or send a fix on <a href="https://github.com/nhprince/khata">GitHub</a>. Translations and testing on different systems are especially welcome.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="wrap band-inner">
+        <h2>Ready to open your khata?</h2>
+        <div class="cta-row center">
+          <a class="btn btn-primary" href="https://app.khata.bond">Open in your browser <span aria-hidden="true">&rarr;</span></a>
+          <a class="btn btn-ghost" href="#download">Download the app</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap foot">
+      <div>
+        <p class="foot-brand"><img src="/img/khata-mark.svg" width="28" height="29" alt=""> <strong>Khata</strong> <span class="bn" lang="bn">খাতা</span></p>
+        <p class="fine">&copy; 2026 NH Prince Pradhan. Khata is a fork of <a href="https://github.com/storytold/wordcraft">WordCraft</a> by the ArtCraft Team and its contributors, used under the MIT or Apache-2.0 license.</p>
+        <p class="fine">Not affiliated with Microsoft. &ldquo;Microsoft&rdquo; and &ldquo;Word&rdquo; are trademarks of Microsoft Corporation.</p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="https://github.com/nhprince/khata">Source code</a>
+        <a href="https://github.com/nhprince/khata/releases">Releases</a>
+        <a href="https://github.com/nhprince/khata/blob/main/docs/licensing.md">Licensing</a>
+        <a href="https://github.com/nhprince/khata/security">Security</a>
+        <a href="/fonts/LICENSES.txt">Font licenses</a>
+        <a href="https://nhprince.me">Made by NH Prince Pradhan</a>
+      </nav>
+    </div>
+    <p class="fine center privacy">This site has no cookies and no trackers. The download buttons ask GitHub for the latest version number.</p>
+  </footer>
+</body>
+</html>

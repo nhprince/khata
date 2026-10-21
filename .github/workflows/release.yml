@@ -245,7 +245,8 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------------------------
-  # Web: the in-browser version as a zip, and as a live demo on GitHub Pages (best effort).
+  # Web: the in-browser version as a zip for the release (best effort). The live app at app.khata.bond
+  # is deployed by site-app.yml on every push.
   # ---------------------------------------------------------------------------------------------
   web:
     needs: prepare
@@ -280,27 +281,9 @@ jobs:
           name: dist-web
           path: dist/release/*
           if-no-files-found: error
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist/web
       - name: Mark the web build as good
         id: done
         run: echo "ok=true" >> "$GITHUB_OUTPUT"
-
-  pages:
-    needs: [prepare, web]
-    if: ${{ needs.prepare.outputs.publish == 'true' && needs.web.outputs.ok == 'true' }}
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
 
   # ---------------------------------------------------------------------------------------------
   # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.

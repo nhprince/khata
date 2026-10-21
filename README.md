@@ -18,8 +18,9 @@ and extended by [NH Prince Pradhan](https://nhprince.me). All the document engin
 [Credits](#credits-and-license).
 
 <p align="center">
+  <a href="https://khata.bond"><b>Website</b></a> ·
   <a href="https://github.com/nhprince/khata/releases/latest"><b>Download</b></a> ·
-  <a href="https://nhprince.github.io/khata/"><b>Try it in your browser</b></a> ·
+  <a href="https://app.khata.bond"><b>Try it in your browser</b></a> ·
   <a href="https://github.com/nhprince/khata/actions/workflows/ci.yml">CI</a>
 </p>
 
@@ -39,7 +40,7 @@ and extended by [NH Prince Pradhan](https://nhprince.me). All the document engin
 
 ## Install
 
-Grab the installer for your system from the [latest release](https://github.com/nhprince/khata/releases/latest): Windows `.msi` (or portable `.zip`), macOS `.dmg`, Linux `.AppImage`, `.deb`, `.rpm` or `.tar.gz`. Or open the [live demo](https://nhprince.github.io/khata/) in your browser. Releases are built automatically; see [`docs/releasing.md`](docs/releasing.md).
+Grab the installer for your system from the [latest release](https://github.com/nhprince/khata/releases/latest): Windows `.msi` (or portable `.zip`), macOS `.dmg`, Linux `.AppImage`, `.deb`, `.rpm` or `.tar.gz`. Or open the [web app](https://app.khata.bond) in your browser. Releases are built automatically; see [`docs/releasing.md`](docs/releasing.md).
 
 ## Build from source
 
