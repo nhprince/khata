@@ -1,5 +1,7 @@
 # Releasing Khata
 
+(The whole day-to-day flow, with a diagram: `docs/maintenance.md`.)
+
 Releases are automatic. `.github/workflows/release.yml` builds every installer and publishes the
 GitHub Release; you only choose the version.
 

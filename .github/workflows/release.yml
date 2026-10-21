@@ -36,7 +36,7 @@ jobs:
   # Decide the version, bump and tag it when asked to, and tell the other jobs what to build.
   # ---------------------------------------------------------------------------------------------
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
       ref: ${{ steps.v.outputs.ref }}
@@ -250,7 +250,7 @@ jobs:
   # ---------------------------------------------------------------------------------------------
   web:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     outputs:
       ok: ${{ steps.done.outputs.ok }}
@@ -291,7 +291,7 @@ jobs:
   release:
     needs: [prepare, windows, linux, macos, web]
     if: ${{ always() && needs.prepare.outputs.publish == 'true' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:

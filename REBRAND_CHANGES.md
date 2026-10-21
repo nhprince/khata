@@ -206,3 +206,18 @@ Found by running the Release workflow once on GitHub (dry run):
 - Removed `docs/cloudflare-cdn.md` (superseded by `docs/hosting.md`).
 - Not verified: the pages have not been opened in a real browser (only the hero artwork was rendered, the
   script was syntax-checked, and every link and file reference was validated).
+
+## 16. Round 9: fixes after the first website deploy
+
+- **Wrong address in the workflow summary and docs.** Cloudflare Pages names are global: `khata.pages.dev`
+  belongs to someone else, so Cloudflare gave this project a suffixed address. The site workflow now asks
+  Cloudflare for the real address, and the docs no longer name `khata.pages.dev`.
+- **Misleading "2 errors" annotation.** The workflow tried to create the Pages project on every run and ignored
+  the "already exists" failure, which GitHub still shows as an error. It now looks the project up first and creates
+  it only when missing; a real failure is no longer hidden.
+- **Deployment smoke test** added to the site workflow (the new deployment must answer and contain the page).
+- **Runner pinned** to Ubuntu 24.04 in CI, Release and the site workflows (GitHub is moving `ubuntu-latest` to
+  Ubuntu 26).
+- Website: the Bengali word in the text now uses the Atma font; the download buttons also accept any
+  `.tar.gz` / Windows `.zip` asset name.
+- New `docs/maintenance.md`: the complete flow, what is automatic, and routine maintenance.

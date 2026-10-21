@@ -72,6 +72,7 @@ a { color: var(--chili); text-underline-offset: 3px; text-decoration-thickness: 
 a:hover { text-decoration-style: wavy; }
 code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.85em; background: var(--note-a); padding: 0.1em 0.4em; border-radius: 6px; border: 1.5px solid var(--ink); }
 em { font-style: normal; }
+em[lang="bn"] { font-family: var(--bn); font-weight: 700; color: var(--chili); }
 :focus-visible { outline: 3px dashed var(--chili); outline-offset: 3px; border-radius: 6px; }
 
 .wrap { width: min(100% - 2 * clamp(1rem, 4vw, 2rem), var(--maxw)); margin-inline: auto; }

@@ -55,12 +55,12 @@
     var n = asset.name || '';
     if (/sha256|third_party/i.test(n)) return null;
     if (/\.msi$/i.test(n)) return { os: 'windows', label: 'Installer (.msi)', rank: 0 };
-    if (/windows.*\.zip$/i.test(n)) return { os: 'windows', label: 'Portable (.zip)', rank: 1 };
+    if (/win.*\.zip$/i.test(n)) return { os: 'windows', label: 'Portable (.zip)', rank: 1 };
     if (/\.dmg$/i.test(n)) return { os: 'macos', label: 'Disk image (.dmg)', rank: 0 };
     if (/\.appimage$/i.test(n)) return { os: 'linux', label: 'AppImage', rank: 0 };
     if (/\.deb$/i.test(n)) return { os: 'linux', label: '.deb (Debian, Ubuntu)', rank: 1 };
     if (/\.rpm$/i.test(n)) return { os: 'linux', label: '.rpm (Fedora, openSUSE)', rank: 2 };
-    if (/linux.*\.tar\.gz$/i.test(n)) return { os: 'linux', label: '.tar.gz', rank: 3 };
+    if (/\.tar\.gz$/i.test(n) && !/source/i.test(n)) return { os: 'linux', label: '.tar.gz', rank: 3 };
     return null;
   }
   function render(release) {

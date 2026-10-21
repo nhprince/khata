@@ -23,8 +23,11 @@ big app to GitHub Pages.
 
 ### 2. Deploy the website once
 Push this project (the `site/` folder triggers it), or run *Actions › Site (khata.bond) › Run workflow*.
-It checks the site, creates the Cloudflare Pages project `khata`, and deploys. Open
-`https://khata.pages.dev` to see it.
+It checks the site, creates the Cloudflare Pages project `khata` (first run only), deploys, and tests the
+deployment. The run's *Summary* page shows your project's real address. It may carry a suffix, for example
+`khata-c7l.pages.dev`, because `khata.pages.dev` belongs to someone else: use the address from the
+summary (or the one in the Cloudflare dashboard), never `khata.pages.dev`. Only `khata.bond` is the
+public address.
 
 ### 3. Move the domain (the order matters)
 1. **Cloudflare › DNS › Records:** delete the record `khata.bond  CNAME  nhprince.github.io`.
@@ -52,6 +55,8 @@ Then check: `https://khata.bond`, `https://www.khata.bond` and `https://app.khat
   the file names change with every build). GitHub's own CDN is already fast, so this is a bonus.
 
 ## Troubleshooting
+- **`khata.pages.dev` shows somebody else's site.** Cloudflare Pages names are global; yours is the one
+  with the suffix shown in the workflow summary. Ignore the other one and use `khata.bond`.
 - **GitHub: "DNS check unsuccessful" for app.khata.bond.** The record must be named exactly `app`
   (not `app.khata.bond.khata.bond`), target `nhprince.github.io`, grey cloud, and there must be no
   other A, AAAA or CNAME record for `app`.
