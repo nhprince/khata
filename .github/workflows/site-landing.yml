@@ -60,7 +60,7 @@ jobs:
           fi
       - name: Create the Pages project (first run only)
         if: steps.cfg.outputs.configured == 'true' && steps.project.outputs.exists == 'false'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -68,7 +68,7 @@ jobs:
       - name: Deploy to Cloudflare Pages
         id: deploy
         if: steps.cfg.outputs.configured == 'true'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
