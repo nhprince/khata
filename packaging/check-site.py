@@ -73,6 +73,13 @@ for page_name in ("index.html", "404.html"):
     for ref in parser.refs:
         check_ref(page_name, ref, parser.ids)
 
+headers = open(os.path.join(SITE, "_headers"), encoding="utf-8").read() if os.path.exists(os.path.join(SITE, "_headers")) else ""
+js = open(os.path.join(SITE, "js", "main.js"), encoding="utf-8").read() if os.path.exists(os.path.join(SITE, "js", "main.js")) else ""
+if "fetch(" in js and "connect-src 'self'" not in headers:
+    problems.append("_headers: the script uses fetch() but the CSP connect-src does not allow 'self'")
+if "https://api.github.com" in js and "https://api.github.com" not in headers:
+    problems.append("_headers: the script calls api.github.com but the CSP connect-src does not allow it")
+
 css = open(os.path.join(SITE, "css", "style.css"), encoding="utf-8").read()
 for ref in re.findall(r'url\("?([^")]+)"?\)', css):
     if not ref.startswith("data:"):

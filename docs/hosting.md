@@ -2,9 +2,11 @@
 
 | Address | What | Hosted on | Updated by |
 |---|---|---|---|
-| https://khata.bond (and www) | the landing page in `site/` | Cloudflare Pages | `.github/workflows/site-landing.yml`, on every push that changes `site/` |
-| https://app.khata.bond | the web app (the browser version of Khata) | GitHub Pages | `.github/workflows/site-app.yml`, on every push that changes the app or what it is built from |
-| GitHub Releases | installers for Windows, macOS, Linux | GitHub | `.github/workflows/release.yml`, when you run *Release* |
+| https://khata.bond (and www) | the landing page in `site/` | Cloudflare Pages | the **Release** workflow (its `site` job), or by hand: Actions › Site (khata.bond) |
+| https://app.khata.bond | the web app (the browser version of Khata) | GitHub Pages | the **Release** workflow (its `pages` job), or by hand: Actions › App (app.khata.bond) |
+| GitHub Releases | installers for Windows, macOS, Linux | GitHub | the **Release** workflow |
+
+Nothing is deployed by an ordinary push: you publish by running **Release** (see `docs/maintenance.md`).
 
 Why two hosts? A GitHub Pages site can serve only one domain, and Cloudflare Pages rejects files over
 25 MiB, but the app's `.wasm` file is about 40 MB. So the small website goes to Cloudflare Pages and the
@@ -22,7 +24,7 @@ big app to GitHub Pages.
    `CLOUDFLARE_API_TOKEN` (the token) and `CLOUDFLARE_ACCOUNT_ID` (the account id).
 
 ### 2. Deploy the website once
-Push this project (the `site/` folder triggers it), or run *Actions › Site (khata.bond) › Run workflow*.
+Run *Actions › Site (khata.bond) › Run workflow* (later it runs by itself at the end of every release).
 It checks the site, creates the Cloudflare Pages project `khata` (first run only), deploys, and tests the
 deployment. The run's *Summary* page shows your project's real address. It may carry a suffix, for example
 `khata-c7l.pages.dev`, because `khata.pages.dev` belongs to someone else: use the address from the
@@ -41,8 +43,8 @@ public address.
    certificate itself). Repeat for `www.khata.bond`.
 5. **GitHub › Settings › Pages:** press *Check again* until the DNS check for `app.khata.bond` passes,
    wait for the certificate (usually 15 minutes, sometimes an hour), then tick **Enforce HTTPS**.
-6. **Deploy the app to the new address:** *Actions › App (app.khata.bond) › Run workflow* (from now on it
-   runs by itself on every relevant push).
+6. **Deploy the app to the new address:** *Actions › App (app.khata.bond) › Run workflow* once (from now on
+   every release deploys it by itself).
 
 Then check: `https://khata.bond`, `https://www.khata.bond` and `https://app.khata.bond`.
 
@@ -70,6 +72,7 @@ Then check: `https://khata.bond`, `https://www.khata.bond` and `https://app.khat
 
 ## Editing the website
 Everything lives in `site/` (`index.html`, `css/style.css`, `js/main.js`). Run
-`python3 packaging/check-site.py` to check it; a push to `main` publishes it in about a minute.
-The download buttons read the latest GitHub release automatically, so a new release updates them
-without touching the site.
+`python3 packaging/check-site.py` to check it. A release publishes it; to publish a wording fix between
+releases, run *Actions › Site (khata.bond)*. The download buttons are bound to the release: the Release workflow
+writes `release.json` (version and exact links) into the deployed site, so a new release updates them without
+touching the files (GitHub's API is only a fallback).

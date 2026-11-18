@@ -14,3 +14,6 @@ plan/
 
 # Generated at release time by packaging/third-party-licenses.py
 THIRD_PARTY_LICENSES.txt
+
+# Written by the Release workflow into the deployed website only
+site/release.json

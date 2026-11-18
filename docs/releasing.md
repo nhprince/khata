@@ -14,19 +14,16 @@ GitHub Release; you only choose the version.
 
 ## Making a release
 
-**One click (recommended).** *Actions › Release › Run workflow*, type the new version (for example
-`0.2.0`) and run it. The workflow bumps the version in `Cargo.toml` and `Cargo.lock`, commits
-`Release v0.2.0` to the branch, tags it, builds everything, and publishes the release with
-checksums and a change list taken from your commit messages.
+**Actions › Release › Run workflow**, branch `main`, type the new version (for example `0.2.0`). The workflow
+bumps and commits the version, builds everything, publishes the release (creating the tag), then deploys the web
+app (app.khata.bond) and the website (khata.bond). The full flow, failure recovery and the by-hand alternative
+are in `docs/maintenance.md`.
 
-**By hand.** `cargo xtask version set 0.2.0`, commit, `git tag v0.2.0`, `git push --tags`. The tag
-starts the same workflow; it refuses a tag that does not match the version in `Cargo.toml`.
+**Dry run.** Run it with the version box empty: everything is built and attached to the run (Actions › the run ›
+Artifacts) but nothing is committed, published or deployed. Do this before changing packaging.
 
-**Dry run.** Run the workflow with the version box empty. Everything is built and attached to the
-run (Actions › the run › Artifacts) but nothing is committed or published. Do this before the first
-release and after changing packaging.
-
-Pre-releases: a version with a suffix (`0.2.0-beta.1`) is published as a pre-release.
+Pre-releases: a version with a suffix (`0.2.0-beta.1`) is published as a pre-release and does not touch the
+live app or website.
 
 ## What gets built
 
@@ -35,17 +32,17 @@ Pre-releases: a version with a suffix (`0.2.0-beta.1`) is published as a pre-rel
 | Windows | `.msi` installer (WiX v5) and a portable `.zip` | yes |
 | Linux | `.AppImage`, `.deb`, `.rpm`, `.tar.gz` (built on Ubuntu 22.04, so they run on newer distros) | yes |
 | macOS | universal `.dmg` and a CLI zip | no (best effort) |
-| Web | `khata-web-<version>.zip` and the GitHub Pages live demo | no (best effort) |
+| Web | `khata-web-<version>.zip`; the same build goes live at app.khata.bond | yes |
 
-A failure in an optional job never blocks the release; the release page just lacks that file. If
+A failure in the optional macOS job never blocks the release; the release page just lacks that file. A failed required job blocks the release, and nothing is tagged. If
 the MSI or the AppImage step fails, the workflow still ships the portable zip or the `.deb`/`.tar.gz`
 and prints a warning in the run.
 
 ## Web hosting
 
-The website (khata.bond) and the web app (app.khata.bond) are published by their own workflows on
-every push, not by the release; the download buttons on the website read the latest release by
-themselves. Setup and domains: `docs/hosting.md`.
+The web app (app.khata.bond) and the website (khata.bond) are deployed by the release itself, in its last two
+jobs, from the same commit. The website's download buttons read a `release.json` that the release writes into
+the deployed site, so they always point at this release. Setup and domains: `docs/hosting.md`.
 
 ## Notices and verification
 

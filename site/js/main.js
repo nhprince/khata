@@ -64,11 +64,14 @@
     return null;
   }
   function render(release) {
+    // Two shapes are accepted: /release.json (written by the Release workflow: tag, assets[].url) and
+    // GitHub's API (tag_name, assets[].browser_download_url).
     if (!release || !release.assets) return;
+    var tagName = release.tag || release.tag_name;
     var groups = { windows: [], macos: [], linux: [] };
     release.assets.forEach(function (a) {
       var c = classify(a);
-      var url = a.browser_download_url || '';
+      var url = a.url || a.browser_download_url || '';
       if (c && url.indexOf('https://github.com/' + REPO + '/') === 0) {
         groups[c.os].push({ label: c.label, rank: c.rank, url: url, size: a.size });
       }
@@ -88,24 +91,33 @@
       });
     });
     var label = document.querySelector('[data-release-version]');
-    if (label && release.tag_name) {
+    if (label && tagName) {
       var when = release.published_at ? new Date(release.published_at) : null;
-      label.textContent = 'Latest version: ' + release.tag_name.replace(/^v/, 'v') +
+      label.textContent = 'Latest version: ' + tagName +
         (when && !isNaN(when) ? ', released ' + when.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '') + '.';
     }
   }
+  function fromJson(url, options) {
+    return fetch(url, options).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
   function load() {
-    var KEY = 'khata-latest-release';
-    try {
-      var cached = JSON.parse(sessionStorage.getItem(KEY) || 'null');
-      if (cached && Date.now() - cached.t < 600000) return Promise.resolve(cached.data);
-    } catch (e) { /* storage may be unavailable */ }
-    return fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (data) {
-        try { sessionStorage.setItem(KEY, JSON.stringify({ t: Date.now(), data: data })); } catch (e) { /* ignore */ }
-        return data;
-      });
+    // 1. the file the Release workflow put on this very site (instant, no rate limit);
+    // 2. otherwise ask GitHub (remembered for 10 minutes in this browser tab).
+    return fromJson('/release.json', { cache: 'no-cache' }).catch(function () {
+      var KEY = 'khata-latest-release';
+      try {
+        var cached = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+        if (cached && Date.now() - cached.t < 600000) return cached.data;
+      } catch (e) { /* storage may be unavailable */ }
+      return fromJson('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+        .then(function (data) {
+          try { sessionStorage.setItem(KEY, JSON.stringify({ t: Date.now(), data: data })); } catch (e) { /* ignore */ }
+          return data;
+        });
+    });
   }
   if (window.fetch) load().then(render).catch(function () { /* keep the default links */ });
 })();

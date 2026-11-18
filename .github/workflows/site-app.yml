@@ -1,21 +1,20 @@
-# The Khata web app (app.khata.bond): builds the browser version and deploys it to GitHub Pages on every
-# push to main that changes the app or anything it is built from (or by hand: Actions > "App
-# (app.khata.bond)" > Run workflow). GitHub Pages is used because the app's .wasm file is larger than
-# Cloudflare Pages' 25 MiB per-file limit. Setup, domains and DNS: docs/hosting.md.
+# The Khata web app (app.khata.bond). It is deployed automatically by the Release workflow (the same build
+# that goes into the release), so you normally never run this one. Run it by hand
+# (Actions > "App (app.khata.bond)" > Run workflow) only to redeploy the app without making a release, for
+# example after a failed deployment. It rebuilds the LATEST RELEASE (or the commit/tag you type), so the
+# live app always matches a numbered release.
+#
+# GitHub Pages is used because the app's .wasm file is larger than Cloudflare Pages' 25 MiB per-file limit.
+# Setup, domains and DNS: docs/hosting.md.
 name: App (app.khata.bond)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/khata-web/**"
-      - "crates/**"
-      - "assets/**"
-      - "packaging/web/**"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - ".github/workflows/site-app.yml"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or commit to deploy (default: the latest release)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -28,7 +27,22 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
+      - name: Pick what to deploy
+        id: pick
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          ref="$INPUT_REF"
+          if [ -z "$ref" ]; then ref="$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name 2>/dev/null || true)"; fi
+          if [ -z "$ref" ]; then ref="${GITHUB_REF_NAME}"; echo "::notice::No release yet; deploying the branch $ref."; fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Deploying $ref"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.pick.outputs.ref }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown

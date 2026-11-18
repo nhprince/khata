@@ -221,3 +221,39 @@ Found by running the Release workflow once on GitHub (dry run):
 - Website: the Bengali word in the text now uses the Atma font; the download buttons also accept any
   `.tar.gz` / Windows `.zip` asset name.
 - New `docs/maintenance.md`: the complete flow, what is automatic, and routine maintenance.
+
+## 17. Round 10: one-action releases, and a website that fits every screen
+
+- **One action does everything.** *Release* now bumps the version, builds Windows/Linux/macOS/web, publishes the
+  release, then deploys the web app (app.khata.bond) from the same build and the website (khata.bond) with
+  `release.json` (version and exact links) baked in. Ordinary pushes only run CI. `site-landing.yml` is reusable
+  (called by Release) and can also be run by hand; `site-app.yml` is manual-only and redeploys the latest release.
+- **Inconsistencies found and fixed:** the web app and website deployed on every push while installers followed
+  releases (two sources of truth); the web build was optional although the app depends on it; a failed release
+  had already pushed a tag, so re-running the same version was refused (the tag is now created at publish);
+  a push race on `main` is retried with a rebase; the release-notes table helper aborted the whole step when a
+  platform had no files (it would have blocked a release whenever macOS failed); pre-releases no longer touch
+  the live app and website; the website no longer depends on GitHub's anonymous API rate limit.
+- **Website:** stylesheet rewritten mobile-first. The hero is sized from the screen height as well as the width
+  so the headline, text and buttons are always in the first screen. Measured with a headless browser on 23
+  screen sizes (320 to 4K, phones sideways, a zoomed laptop): no horizontal overflow, hero buttons in view
+  everywhere; with browser fonts at 125% only the very smallest phone misses.
+- Runners are pinned to Ubuntu 24.04. New `docs/maintenance.md` (the whole flow).
+
+## 18. Round 11: final audit of the release, deployment and website logic
+
+- **Linted** every workflow with `actionlint` (expressions, job graph, permissions, and `shellcheck` on every script): clean.
+- **Executed** the real release scripts against scratch Git repositories: 15 scenarios (normal release, re-run after
+  failure, existing tag, hand-pushed tags, dry run, pre-release, bad input, running from a tag, a push race on `main`,
+  a release or dry run from a feature branch), the release-notes generator with and without a missing platform, and the
+  `release.json` step with a found and a missing release. The real `cargo xtask version set` was run too: it changes
+  exactly `Cargo.toml` and 20 version lines in `Cargo.lock`, and `cargo metadata --locked` passes afterwards.
+- **Fixed during the audit:** a real release is only accepted from the default branch; the release is created as a
+  draft and published by id after all uploads (a failed upload cannot leave a half-published release); the macOS and
+  website results in the summary are reported honestly; the app deployment shares a lock with the manual "App"
+  workflow; the website's `_headers` no longer sets `Cache-Control` in a catch-all rule (Cloudflare joins values of
+  all matching rules); a plain header background for browsers without `color-mix()`; the logo link's accessible name
+  now contains its visible text (WCAG label-in-name).
+- **Website** re-tested on the final code in a headless browser: 23 screen sizes (no overflow, hero buttons always in
+  the first screen, no console errors under the strict security policy), the `release.json` binding, and an `axe-core`
+  accessibility audit in light and dark on a phone and a laptop (0 violations; every text colour pair is at least 5.2:1).

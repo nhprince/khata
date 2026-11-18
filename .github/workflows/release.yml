@@ -1,14 +1,19 @@
-# Khata release pipeline: one click (or one tag) builds every installer and publishes a GitHub Release.
+# Khata release pipeline: ONE action does everything.
 #
-# HOW TO RELEASE (see docs/releasing.md):
-#   1. GitHub > Actions > "Release" > "Run workflow", type the new version (for example 0.2.0).
-#      The workflow bumps the version, commits, tags v0.2.0, builds everything, and publishes.
-#   2. Leave "version" empty to do a dry run: everything is built and attached to the run, nothing is
-#      published and nothing is committed.
-#   Or, by hand: `cargo xtask version set 0.2.0`, commit, `git tag v0.2.0`, `git push --tags`.
+#   Actions > "Release" > "Run workflow", type the new version (for example 0.2.0). The workflow:
+#     1. bumps the version and commits it to the branch,
+#     2. builds the installers (Windows, Linux, macOS) and the web app, in parallel,
+#     3. publishes the GitHub Release (installers, checksums, license notices, change list; the tag is
+#        created at this point, so a failed build leaves nothing half-done and you can simply run it again),
+#     4. deploys the web app to app.khata.bond (the very same build that is in the release),
+#     5. deploys the website khata.bond (its download buttons are bound to this release).
+#   Leave "version" empty for a dry run: everything is built and attached to the run, nothing is
+#   published, committed or deployed. A version with a suffix (0.2.0-beta.1) is published as a
+#   pre-release and does not touch the live app or website.
+#   By hand instead: `cargo xtask version set 0.2.0`, commit, `git tag v0.2.0`, `git push --tags`.
 #
-# Windows and Linux are required; macOS and the web build are best effort (a failure there never
-# blocks the release). Signing is skipped when no signing secrets exist (see docs/releasing.md).
+# Windows, Linux and the web build are required (a release must exist for every platform, or not at all);
+# macOS is best effort. See docs/maintenance.md for the whole picture.
 name: Release
 
 on:
@@ -56,6 +61,7 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
           REF_TYPE: ${{ github.ref_type }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           semver='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
@@ -73,10 +79,11 @@ jobs:
             publish=true
             ref="$GITHUB_SHA"
           elif [ -n "$INPUT_VERSION" ]; then
-            # One-click release: bump, commit, tag.
+            # One-click release: bump and commit (the tag comes with the published release).
             version="${INPUT_VERSION#v}"
             [[ "$version" =~ $semver ]] || { echo "::error::'$INPUT_VERSION' is not a version like 1.2.3 or 1.2.3-beta.1"; exit 1; }
             [ "$REF_TYPE" = "branch" ] || { echo "::error::run this workflow from a branch (usually main), not a tag"; exit 1; }
+            [ "$REF_NAME" = "$DEFAULT_BRANCH" ] || { echo "::error::releases are made from $DEFAULT_BRANCH (you started this on $REF_NAME). Use an empty version for a dry run on another branch."; exit 1; }
             if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
               echo "::error::tag v$version already exists"; exit 1
             fi
@@ -85,9 +92,11 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add Cargo.toml Cargo.lock
             git diff --cached --quiet || git commit -m "Release v$version"
-            git tag "v$version"
-            git push origin "HEAD:refs/heads/$REF_NAME"
-            git push origin "refs/tags/v$version"
+            # No tag yet: the release job creates it once everything has built.
+            if ! git push origin "HEAD:refs/heads/$REF_NAME"; then
+              git pull --rebase origin "$REF_NAME"
+              git push origin "HEAD:refs/heads/$REF_NAME"
+            fi
             publish=true
             ref="$(git rev-parse HEAD)"
           else
@@ -219,6 +228,8 @@ jobs:
     needs: prepare
     runs-on: macos-latest
     continue-on-error: true
+    outputs:
+      ok: ${{ steps.done.outputs.ok }}
     env:
       KHATA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -243,17 +254,17 @@ jobs:
           name: dist-macos
           path: dist/release/*
           if-no-files-found: error
+      - name: Mark the macOS build as good
+        id: done
+        run: echo "ok=true" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------------------------
-  # Web: the in-browser version as a zip for the release (best effort). The live app at app.khata.bond
-  # is deployed by site-app.yml on every push.
+  # Web: the in-browser version. It becomes the zip in the release AND, after the release is published,
+  # the live app at app.khata.bond (same build, so the two can never differ).
   # ---------------------------------------------------------------------------------------------
   web:
     needs: prepare
     runs-on: ubuntu-24.04
-    continue-on-error: true
-    outputs:
-      ok: ${{ steps.done.outputs.ok }}
     env:
       KHATA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -281,19 +292,21 @@ jobs:
           name: dist-web
           path: dist/release/*
           if-no-files-found: error
-      - name: Mark the web build as good
-        id: done
-        run: echo "ok=true" >> "$GITHUB_OUTPUT"
+      # The same files go to app.khata.bond after the release is published (the "pages" job below).
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
 
   # ---------------------------------------------------------------------------------------------
   # Publish: checksums, an automatic change list from the commit messages, and the GitHub Release.
   # ---------------------------------------------------------------------------------------------
   release:
     needs: [prepare, windows, linux, macos, web]
-    if: ${{ always() && needs.prepare.outputs.publish == 'true' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
+    if: ${{ always() && needs.prepare.outputs.publish == 'true' && needs.windows.result == 'success' && needs.linux.result == 'success' && needs.web.result == 'success' }}
     runs-on: ubuntu-24.04
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
+      REF: ${{ needs.prepare.outputs.ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -309,16 +322,16 @@ jobs:
         run: |
           set -euo pipefail
           (cd dist && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
-          tag="v$VERSION"
-          prev="$(git describe --tags --abbrev=0 --match 'v*' "${tag}^" 2>/dev/null || true)"
-          range="${prev:+$prev..}$tag"
+          prev="$(git describe --tags --abbrev=0 --match 'v*' "${REF}^" 2>/dev/null || true)"
+          range="${prev:+$prev..}$REF"
           {
             echo "## Downloads"
             echo
             echo "| Platform | Files |"
             echo "|---|---|"
             row() {
-              files="$(ls dist | grep -vi '^SHA256SUMS' | grep -i -- "$2" | sed 's/.*/`&`/' | paste -sd'|' - | sed 's/|/, /g')"
+              # shellcheck disable=SC2016
+              files="$(find dist -maxdepth 1 -type f -printf '%f\n' | sort | grep -vi '^SHA256SUMS' | grep -i -- "$2" | sed 's/.*/`&`/' | paste -sd'|' - | sed 's/|/, /g' || true)"
               [ -z "$files" ] || echo "| $1 | $files |"
             }
             row Windows 'windows'
@@ -337,8 +350,11 @@ jobs:
             git log --no-merges --pretty='- %s (%h)' "$range" | grep -v '^- Release v' || echo "- First release"
           } > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
-      - uses: softprops/action-gh-release@v2
+      - name: Create the release as a draft and upload everything
+        id: draft
+        uses: softprops/action-gh-release@v2
         with:
+          draft: true
           tag_name: v${{ needs.prepare.outputs.version }}
           target_commitish: ${{ needs.prepare.outputs.ref }}
           name: Khata v${{ needs.prepare.outputs.version }}
@@ -346,3 +362,77 @@ jobs:
           prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
           files: dist/*
           fail_on_unmatched_files: true
+      - name: Publish the release (creates the tag)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ steps.draft.outputs.id }}
+        run: |
+          # By the draft's id: GitHub does not list drafts under their tag name, the tag does not exist yet.
+          [ -n "$RELEASE_ID" ] || { echo "::error::the draft release id is missing"; exit 1; }
+          gh api --method PATCH "repos/$GH_REPO/releases/$RELEASE_ID" -F draft=false --jq '"Published " + .html_url'
+
+  # ---------------------------------------------------------------------------------------------
+  # After the release is published: the web app and the website follow it automatically.
+  # (Pre-releases such as 0.2.0-beta.1 never touch the live app or website.)
+  # ---------------------------------------------------------------------------------------------
+  pages:
+    needs: [prepare, release]
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    if: ${{ needs.prepare.outputs.publish == 'true' && needs.prepare.outputs.prerelease == 'false' && needs.release.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  site:
+    needs: [prepare, release]
+    if: ${{ needs.prepare.outputs.publish == 'true' && needs.prepare.outputs.prerelease == 'false' && needs.release.result == 'success' }}
+    uses: ./.github/workflows/site-landing.yml
+    with:
+      ref: ${{ needs.prepare.outputs.ref }}
+      tag: v${{ needs.prepare.outputs.version }}
+    secrets: inherit
+    permissions:
+      contents: read
+
+  report:
+    needs: [prepare, windows, linux, macos, web, release, pages, site]
+    if: ${{ always() && needs.prepare.outputs.publish == 'true' }}
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      R_WINDOWS: ${{ needs.windows.result }}
+      R_LINUX: ${{ needs.linux.result }}
+      R_MACOS: "${{ needs.macos.outputs.ok == 'true' && 'success' || 'failed (optional, see the job)' }}"
+      R_WEB: ${{ needs.web.result }}
+      R_RELEASE: ${{ needs.release.result }}
+      R_PAGES: ${{ needs.pages.result }}
+      R_SITE: "${{ needs.site.result }}${{ needs.site.outputs.deployed == 'false' && ' (not deployed, the Cloudflare secrets are missing)' || '' }}"
+    steps:
+      - name: Summary of this release
+        run: |
+          {
+            echo "### Release v$VERSION"
+            echo
+            echo "| Step | Result |"
+            echo "|---|---|"
+            echo "| Windows installer | $R_WINDOWS |"
+            echo "| Linux packages | $R_LINUX |"
+            echo "| macOS disk image (optional) | $R_MACOS |"
+            echo "| Web build | $R_WEB |"
+            echo "| GitHub Release published | $R_RELEASE |"
+            echo "| Web app live at app.khata.bond | $R_PAGES |"
+            echo "| Website live at khata.bond | $R_SITE |"
+            if [ "$PRERELEASE" = "true" ]; then echo; echo "Pre-release: the live app and website were left alone."; fi
+            if [ "$R_RELEASE" != "success" ]; then echo; echo "The release was not published; nothing was tagged. Fix the failing job and run Release again with the same version."; fi
+          } >> "$GITHUB_STEP_SUMMARY"

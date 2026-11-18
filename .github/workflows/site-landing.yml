@@ -1,5 +1,9 @@
-# The Khata website (khata.bond): deploys the static site in site/ to Cloudflare Pages on every push to
-# main that changes it (or by hand: Actions > "Site (khata.bond)" > Run workflow).
+# The Khata website (khata.bond): deploys the static site in site/ to Cloudflare Pages.
+#
+# It runs automatically at the end of every (non pre-) release: the Release workflow calls it with the
+# release's commit and tag, so the download buttons are bound to exactly that release. You can also run it by
+# hand (Actions > "Site (khata.bond)" > Run workflow) to publish a wording fix without making a release;
+# that deploys the current branch and the latest release.
 #
 # It checks the site first, and does nothing (without failing) until the two secrets exist:
 #   CLOUDFLARE_API_TOKEN   token with  Account > Cloudflare Pages > Edit
@@ -9,30 +13,49 @@
 name: Site (khata.bond)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "site/**"
-      - "packaging/check-site.py"
-      - ".github/workflows/site-landing.yml"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Commit to deploy (default: the branch the workflow was started on)"
+        required: false
+        type: string
+        default: ""
+      tag:
+        description: "Release tag whose download links go on the site (default: the latest release)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+    outputs:
+      deployed:
+        description: "true when the site was deployed, false when Cloudflare is not configured"
+        value: ${{ jobs.deploy.outputs.deployed }}
 
 permissions:
   contents: read
 
 concurrency:
   group: site-landing
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-24.04
+    outputs:
+      deployed: ${{ steps.cfg.outputs.configured }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       PROJECT: ${{ vars.CLOUDFLARE_PROJECT || 'khata' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
       - name: Check the site (links, fonts, images, security policy)
         run: python3 packaging/check-site.py
       - name: Check that Cloudflare is configured
@@ -44,6 +67,22 @@ jobs:
             echo "::notice::Cloudflare is not configured yet (secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID); the site was checked but not deployed. See docs/hosting.md."
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Bind the site to the release (writes release.json with the version and the download links)
+        if: steps.cfg.outputs.configured == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [ -n "$TAG" ]; then endpoint="releases/tags/$TAG"; else endpoint="releases/latest"; fi
+          if gh api "repos/$GITHUB_REPOSITORY/$endpoint" \
+               --jq '{tag: .tag_name, published_at: .published_at, assets: [.assets[] | {name: .name, url: .browser_download_url, size: .size}]}' \
+               > /tmp/release.json 2> /tmp/release.err && [ -s /tmp/release.json ]; then
+            cp /tmp/release.json site/release.json
+            python3 -c "import json; d=json.load(open('site/release.json')); print('release.json:', d['tag'], '-', len(d['assets']), 'files')"
+          else
+            echo "::notice::No release found yet ($(head -c 150 /tmp/release.err)); the site will ask GitHub itself."
           fi
       - name: Look for the Pages project
         id: project
@@ -75,11 +114,16 @@ jobs:
           command: pages deploy site --project-name=${{ env.PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true
       - name: Smoke test the new deployment
         if: steps.cfg.outputs.configured == 'true'
+        shell: bash
         env:
           URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
           curl -fsS --retry 6 --retry-delay 5 --retry-all-errors "$URL" -o /tmp/home.html
           grep -q "Khata" /tmp/home.html
+          if [ -f site/release.json ]; then
+            curl -fsS --retry 6 --retry-delay 5 --retry-all-errors "$URL/release.json" -o /tmp/served.json
+            python3 -c "import json; print('served release.json:', json.load(open('/tmp/served.json'))['tag'])"
+          fi
           echo "The deployment answers and contains the Khata page."
       - name: Summary
         if: steps.cfg.outputs.configured == 'true'
