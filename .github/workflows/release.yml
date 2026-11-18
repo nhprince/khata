@@ -166,7 +166,7 @@ jobs:
         run: |
           $files = Get-ChildItem dist/release | ForEach-Object { "{0,12:N0} bytes  {1}" -f $_.Length, $_.Name }
           @("### Windows packages", '```') + $files + @('```') | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-windows
           path: dist/release/*
@@ -215,7 +215,7 @@ jobs:
         shell: bash
         run: |
           { echo "### Linux packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-linux
           path: dist/release/*
@@ -249,7 +249,7 @@ jobs:
       - name: List what was built
         run: |
           { echo "### macOS packages"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-macos
           path: dist/release/*
@@ -287,13 +287,13 @@ jobs:
       - name: List what was built
         run: |
           { echo "### Web build"; echo '```'; ls -lh dist/release; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-web
           path: dist/release/*
           if-no-files-found: error
       # The same files go to app.khata.bond after the release is published (the "pages" job below).
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/web
 
@@ -312,7 +312,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: dist
@@ -352,7 +352,7 @@ jobs:
           cat RELEASE_NOTES.md
       - name: Create the release as a draft and upload everything
         id: draft
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           tag_name: v${{ needs.prepare.outputs.version }}
@@ -391,7 +391,7 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   site:
     needs: [prepare, release]
